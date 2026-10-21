@@ -13,7 +13,7 @@ export default function Home({ profile, notice, refreshKey }) {
   async function loadGroups() {
     const { data, error } = await supabase
       .from('groups')
-      .select('id, name, invite_code')
+      .select('id, name, invite_code, memberships(count)')
       .order('created_at', { ascending: false })
     if (error) setError(error.message)
     else setGroups(data)
@@ -68,7 +68,7 @@ export default function Home({ profile, notice, refreshKey }) {
         <p style={{ background: '#eef', padding: 12, borderRadius: 8 }}>{notice}</p>
       )}
 
-    <Camera userId={profile.id} />
+    <Camera userId={profile.id} groups={groups} />
 
       <h3>Your groups</h3>
       {loading ? (
