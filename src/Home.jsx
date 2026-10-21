@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Camera from './Camera'
+import StoryViewer from './StoryViewer'
 import { supabase } from './supabaseClient'
 
 export default function Home({ profile, notice, refreshKey }) {
@@ -9,6 +10,7 @@ export default function Home({ profile, notice, refreshKey }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [copiedId, setCopiedId] = useState(null)
+  const [viewing, setViewing] = useState(null)
 
   async function loadGroups() {
     const { data, error } = await supabase
@@ -68,7 +70,7 @@ export default function Home({ profile, notice, refreshKey }) {
         <p style={{ background: '#eef', padding: 12, borderRadius: 8 }}>{notice}</p>
       )}
 
-    <Camera userId={profile.id} groups={groups} />
+      <Camera userId={profile.id} groups={groups} />
 
       <h3>Your groups</h3>
       {loading ? (
@@ -87,7 +89,10 @@ export default function Home({ profile, notice, refreshKey }) {
             }}
           >
             <strong>{g.name}</strong>
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+              <button onClick={() => setViewing(g)} style={{ padding: 8 }}>
+                ▶ View stories
+              </button>
               <button onClick={() => shareInvite(g)} style={{ padding: 8 }}>
                 {copiedId === g.id ? 'Link copied!' : 'Invite friends'}
               </button>
@@ -118,6 +123,8 @@ export default function Home({ profile, notice, refreshKey }) {
           Sign out
         </button>
       </p>
+
+      {viewing && <StoryViewer group={viewing} onClose={() => setViewing(null)} />}
     </div>
   )
 }
