@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Camera from './camera'
 import { supabase } from './supabaseClient'
 
 export default function Home({ profile, notice, refreshKey }) {
@@ -66,6 +67,8 @@ export default function Home({ profile, notice, refreshKey }) {
       {notice && (
         <p style={{ background: '#eef', padding: 12, borderRadius: 8 }}>{notice}</p>
       )}
+
+    <Camera userId={profile.id} />
 
       <h3>Your groups</h3>
       {loading ? (
