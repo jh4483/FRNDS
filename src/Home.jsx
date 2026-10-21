@@ -103,7 +103,7 @@ export default function Home({ profile, notice, refreshKey }) {
 
       <h3>Create a group</h3>
       <input
-        placeholder="Group name (e.g. Chennai crew)"
+        placeholder="Group name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         style={{ width: '100%', padding: 12, fontSize: 16 }}
