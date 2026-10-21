@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Camera from './camera'
+import Camera from './Camera'
 import { supabase } from './supabaseClient'
 
 export default function Home({ profile, notice, refreshKey }) {
