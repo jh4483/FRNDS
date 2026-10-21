@@ -124,7 +124,7 @@ export default function Home({ profile, notice, refreshKey }) {
         </button>
       </p>
 
-      {viewing && <StoryViewer group={viewing} onClose={() => setViewing(null)} />}
+      {viewing && (<StoryViewer group={viewing} userId={profile.id} onClose={() => setViewing(null)} />)}
     </div>
   )
 }

@@ -8,20 +8,20 @@ function timeAgo(iso) {
   return `${Math.floor(mins / 60)}h ago`
 }
 
-export default function StoryViewer({ group, onClose }) {
+export default function StoryViewer({ group, userId, onClose }) {
   const [stories, setStories] = useState([])
   const [index, setIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
     async function load() {
-      // Stories sent to this group. The database only returns the ones you may see.
       const { data, error } = await supabase
         .from('story_recipients')
-        .select('stories(id, media_path, created_at, author:profiles(display_name))')
+        .select('stories(id, author_id, media_path, created_at, author:profiles(display_name))')
         .eq('group_id', group.id)
       if (cancelled) return
       if (error) {
@@ -30,13 +30,11 @@ export default function StoryViewer({ group, onClose }) {
         return
       }
 
-      // oldest first, like a real story
       const list = (data || [])
         .map((row) => row.stories)
         .filter(Boolean)
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
-      // private photos need a temporary signed link (valid for 1 hour)
       if (list.length > 0) {
         const { data: signed, error: signError } = await supabase.storage
           .from('stories')
@@ -75,7 +73,6 @@ export default function StoryViewer({ group, onClose }) {
     if (index > 0) setIndex(index - 1)
   }
 
-  // keyboard support on a computer: arrows and Escape
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') onClose()
@@ -86,7 +83,6 @@ export default function StoryViewer({ group, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // load the next photo in the background so advancing feels instant
   useEffect(() => {
     const upcoming = stories[index + 1]
     if (upcoming?.url) new Image().src = upcoming.url
@@ -99,6 +95,32 @@ export default function StoryViewer({ group, onClose }) {
     else next()
   }
 
+  async function deleteStory() {
+    const story = stories[index]
+    if (!story) return
+    if (!window.confirm('Delete this story for everyone in your groups?')) return
+
+    setDeleting(true)
+    // delete the row first so it disappears for everyone straight away
+    const { data, error } = await supabase
+      .from('stories')
+      .delete()
+      .eq('id', story.id)
+      .select('id')
+    if (error || !data || data.length === 0) {
+      window.alert(error ? error.message : 'Could not delete that story.')
+      setDeleting(false)
+      return
+    }
+    // then remove the photo file
+    await supabase.storage.from('stories').remove([story.media_path])
+
+    const remaining = stories.filter((s) => s.id !== story.id)
+    setStories(remaining)
+    setIndex(Math.max(0, Math.min(index, remaining.length - 1)))
+    setDeleting(false)
+  }
+
   const overlay = {
     position: 'fixed',
     inset: 0,
@@ -109,6 +131,16 @@ export default function StoryViewer({ group, onClose }) {
     flexDirection: 'column',
   }
 
+  const iconButton = {
+    background: 'none',
+    border: 'none',
+    color: '#fff',
+    fontSize: 24,
+    width: 44,
+    height: 44,
+    cursor: 'pointer',
+  }
+
   const closeButton = (
     <button
       onClick={(e) => {
@@ -116,15 +148,7 @@ export default function StoryViewer({ group, onClose }) {
         onClose()
       }}
       aria-label="Close"
-      style={{
-        background: 'none',
-        border: 'none',
-        color: '#fff',
-        fontSize: 28,
-        width: 44,
-        height: 44,
-        cursor: 'pointer',
-      }}
+      style={{ ...iconButton, fontSize: 28 }}
     >
       ✕
     </button>
@@ -146,6 +170,7 @@ export default function StoryViewer({ group, onClose }) {
   }
 
   const story = stories[index]
+  const isMine = story.author_id === userId
 
   return (
     <div style={overlay} role="dialog" aria-label={`${group.name} stories`}>
@@ -156,7 +181,6 @@ export default function StoryViewer({ group, onClose }) {
           style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
         />
 
-        {/* top bar: progress, who posted, close */}
         <div
           style={{
             position: 'absolute',
@@ -186,7 +210,22 @@ export default function StoryViewer({ group, onClose }) {
               <span style={{ opacity: 0.8 }}> · {timeAgo(story.created_at)}</span>
               <div style={{ fontSize: 13, opacity: 0.8 }}>{group.name}</div>
             </div>
-            {closeButton}
+            <div style={{ display: 'flex' }}>
+              {isMine && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteStory()
+                  }}
+                  disabled={deleting}
+                  aria-label="Delete this story"
+                  style={iconButton}
+                >
+                  🗑
+                </button>
+              )}
+              {closeButton}
+            </div>
           </div>
         </div>
       </div>
