@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Camera from './Camera'
 import StoryViewer from './StoryViewer'
 import { supabase } from './supabaseClient'
+import ChangePassword from './ChangePassword'
 
 export default function Home({ profile, notice, refreshKey }) {
   const [groups, setGroups] = useState([])
@@ -118,7 +119,11 @@ export default function Home({ profile, notice, refreshKey }) {
 
       {error && <p style={{ color: 'crimson' }}>{error}</p>}
 
-      <p style={{ marginTop: 32 }}>
+      <div style={{ marginTop: 32 }}>
+        <ChangePassword />
+      </div>
+
+      <p style={{ marginTop: 16 }}>
         <button onClick={() => supabase.auth.signOut()} style={{ padding: 12 }}>
           Sign out
         </button>
